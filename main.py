@@ -1,7 +1,15 @@
+from typing import Optional
 from fastapi import FastAPI
+from pydantic import BaseModel
 import uvicorn
 
 app = FastAPI()
+
+
+class Blog(BaseModel):
+    title: str
+    body: str
+    published: Optional[bool]
 
 
 @app.get('/')
@@ -19,6 +27,11 @@ def about():
 @app.get('/blog/{id}')
 def blog(id:int):
     return f"Get single blog of ID: {id}"
+
+
+@app.post('/blog')
+def create_blog(request: Blog):
+    return request
 
 
 
