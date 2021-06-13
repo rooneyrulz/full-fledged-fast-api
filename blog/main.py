@@ -4,8 +4,10 @@ from fastapi.params import Depends
 from sqlalchemy.orm.session import Session
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
+
+from config.database import SessionLocal, engine
+from config.hash import Hash
 from . import schemas, models
-from .database import SessionLocal, engine
 
 
 app = FastAPI()
@@ -55,9 +57,9 @@ def update_blog(id, request: schemas.Blog, response: Response, db: Session = Dep
     if not blog.first():
         response.status_code = status.HTTP_404_NOT_FOUND
         return "Blog not found!"
-    blog.update(request)
+    blog.update({'title': request.title, 'body': request.body})
     db.commit()
-    return "Blog updated!"
+    return 'Blog updated!'
 
 
 
@@ -72,4 +74,14 @@ def delete_blog(id, response: Response, db: Session = Depends(get_db)):
     
     response.status_code = status.HTTP_200_OK
     return "Blog deleted!"
+
+
+
+@app.post('/user')
+def create_user(request: schemas.User, db: Session = Depends(get_db)):
+    new_user = models.User(name=request.name, email=request.email, password=Hash.bcrypt(request.password))
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
 
