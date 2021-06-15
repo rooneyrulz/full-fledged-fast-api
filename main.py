@@ -1,37 +1,16 @@
-from typing import Optional
 from fastapi import FastAPI
-from pydantic import BaseModel
 import uvicorn
+from config.database import engine
+from routers import blog, user
+from models import models 
 
 app = FastAPI()
 
-
-class Blog(BaseModel):
-    title: str
-    body: str
-    published: Optional[bool]
+models.Base.metadata.create_all(engine)
 
 
-@app.get('/')
-def index():
-    return "Hello From FastAPI!"
-
-
-@app.get('/about')
-def about():
-    return { 
-        "data": { "Greet": "Welcome To About Page!" }
-    }
-
-
-@app.get('/blog/{id}')
-def blog(id:int):
-    return f"Get single blog of ID: {id}"
-
-
-@app.post('/blog')
-def create_blog(request: Blog):
-    return request
+app.include_router(blog.router)
+app.include_router(user.router)
 
 
 

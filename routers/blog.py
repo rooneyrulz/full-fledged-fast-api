@@ -1,46 +1,40 @@
-from fastapi import FastAPI, status
-from fastapi.exceptions import HTTPException
-from fastapi.params import Depends
+from fastapi import APIRouter, status
 from sqlalchemy.orm.session import Session
 from starlette.responses import Response
-from starlette.status import HTTP_204_NO_CONTENT
+from fastapi.params import Depends
 
-from config.database import SessionLocal, engine
-from config.hash import Hash
-from . import schemas, models
+from config.database import get_db
+from models import schemas, models
 
-
-app = FastAPI()
-
-models.Base.metadata.create_all(engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+router = APIRouter(
+    prefix='/api/blog',
+    tags=['Blog']
+)
 
 
-@app.post('/blog', status_code=status.HTTP_201_CREATED)
-def create(blog: schemas.Blog, db: Session = Depends(get_db)):
-    new_blog = models.Blog(title=blog.title, body=blog.body)
-    db.add(new_blog)
-    db.commit()
-    db.refresh(new_blog)
-    return new_blog
 
-
-@app.get('/blogs')
+@router.get('/all', response_model=schemas.BlogResponse)
 def get_all(response: Response, db: Session = Depends(get_db)):
     blogs = db.query(models.Blog).all()
     if not blogs:
         response.status_code = status.HTTP_404_NOT_FOUND
         return []
     return blogs
- 
 
-@app.get('/blog/{id}')
+
+
+@router.post('/create', status_code=status.HTTP_201_CREATED)
+def create(blog: schemas.Blog, db: Session = Depends(get_db)):
+    new_blog = models.Blog(title=blog.title, body=blog.body, user_id=1)
+    db.add(new_blog)
+    db.commit()
+    db.refresh(new_blog)
+    return new_blog
+
+
+
+
+@router.get('/{id}', response_model=schemas.BlogResponse)
 def get_detail(id, response: Response, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).get(id)
     if not blog:
@@ -51,7 +45,8 @@ def get_detail(id, response: Response, db: Session = Depends(get_db)):
 
 
 
-@app.put('/blog/{id}', status_code=status.HTTP_202_ACCEPTED)
+
+@router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
 def update_blog(id, request: schemas.Blog, response: Response, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
@@ -63,7 +58,8 @@ def update_blog(id, request: schemas.Blog, response: Response, db: Session = Dep
 
 
 
-@app.delete('/blog/{id}')
+
+@router.delete('/{id}')
 def delete_blog(id, response: Response, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
@@ -74,14 +70,3 @@ def delete_blog(id, response: Response, db: Session = Depends(get_db)):
     
     response.status_code = status.HTTP_200_OK
     return "Blog deleted!"
-
-
-
-@app.post('/user')
-def create_user(request: schemas.User, db: Session = Depends(get_db)):
-    new_user = models.User(name=request.name, email=request.email, password=Hash.bcrypt(request.password))
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
