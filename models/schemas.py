@@ -1,16 +1,11 @@
-from typing import List
+from typing import Dict, List
 from pydantic import BaseModel
 
 
-class UserBase(BaseModel):
+class User(BaseModel):
     name: str
     email: str
-    
-
-class User(UserBase):
     password: str
-
-
 
 
 class BlogBase(BaseModel):
@@ -25,7 +20,9 @@ class Blog(BlogBase):
 
 
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
+    name: str
+    email: str
     blogs: List[Blog]
 
     class Config():
@@ -33,8 +30,10 @@ class UserResponse(UserBase):
 
 
 
-class BlogResponse(BlogBase):
-    creator: UserResponse = {}
+class BlogResponse(BaseModel):
+    title: str
+    body: str
+    creator: UserResponse
 
     class Config():
         orm_mode = True

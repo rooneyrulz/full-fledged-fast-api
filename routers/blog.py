@@ -13,7 +13,7 @@ router = APIRouter(
 
 
 
-@router.get('/all', response_model=schemas.BlogResponse)
+@router.get('/all')
 def get_all(response: Response, db: Session = Depends(get_db)):
     blogs = db.query(models.Blog).all()
     if not blogs:
